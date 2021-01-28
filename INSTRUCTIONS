@@ -1,0 +1,26 @@
+As of right now, things are done specifically to deal with it manually, if needed. 
+
+You'll need:
+
+WaApi.py  from github
+
+possibly others, which can be installed with pip3 install $LIBRARY_NAME
+
+You will also need:
+wa-key with a token from Wild Apricot, most functions work with read-only access. 
+
+NOTE: This does not incorporate calling Paypal functions directly at the moment. This is due to the lack of need at the moment. 
+
+Description of files:
+
+generalfunctions.py - Most of the support functions to interact with WA. 
+
+get_paypal_subscription_ids.py - Retrieve the value and paypal IDs from WA's audit log, outputs reoccuring_payments.csv
+
+compare_payment_to_file.py - Compares from a file (change if not using reoccuring_payments.csv) with WA payments. IF It does not exist, it will offer to create it. (Lots of debug information printed) Note that using the get_paypal_subscription_ids lists should NEVER result in an unmatched payment. It's mostly for use IF WA doesn't record all information. 
+
+paypalfunctions.py - Limited functions which can look up subscriptions/transactions. 
+
+NOTE: There's no search for subscriptions/reoccuring payments. You have to use IPN, webhooks, or the website. This is a WA-level WOW. 
+
+
