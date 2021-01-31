@@ -108,6 +108,13 @@ def get_unsettled_payments():
 	return api.execute_request(request_url, Printout=False)
 
 
+def get_invoice(invoice_id):
+	check_urls()
+	# print('Getting invoice')
+	request_url = invoicesUrl + '/' + str(invoice_id)
+	return api.execute_request(request_url, Printout=False)	
+
+
 def get_invoices_unpaid():
 	check_urls()
 	print('Getting unpaid invoices')
