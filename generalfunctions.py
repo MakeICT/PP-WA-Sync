@@ -268,7 +268,44 @@ def get_contact_and_subscription_ids(number = 10, debug=False, csv_out=False, sk
 				output.append({'email': audit_log.Email , 'firstname': audit_log.FirstName, 'lastname' : audit_log.LastName, 'wildapricot_contact_id': audit_log.Contact.Id, 'paypal_subscription_id': recurring_payment_id, 'amount' : amounts, 'auditlogid' : items.Id, 'paymentdate': paymentdate})
 	return output
 
+def get_contact_and_subscription_ids_2(number = 10, debug=False, skip=0):
+	created = {}
+	ended = {}
+	audit=get_audit_log(number = number, debug=debug, skip=skip)
+	listing=audit.Items
+	for items in listing:
+		message = items.Message
+		recurring_payment_id = None
+		# print(vars(items).keys()) 
+		print(items.Timestamp)
+		if debug:
+			print(message)
+		if "PayPal Express Checkout subscription (recurring payment) ended" in message:
+			audit_log = get_audit_log_by_id(items.Id, debug=debug)
+			#TODO: audit logs before 2017 do not have any properties, but profile created/ended
+			#      messages have the profile ID in the message, so that could be used instead
+			audit_log_props = audit_log.Properties
+			if 'recurring_payment_id' in vars(audit_log_props).keys():
+				recurring_payment_id = audit_log_props.recurring_payment_id
+			if 'PROFILEID' in vars(audit_log_props).keys():
+				recurring_payment_id = audit_log_props.PROFILEID
 
+			if recurring_payment_id:
+				ended[recurring_payment_id] = audit_log.Contact.Id
+
+		if "PayPal Express Checkout subscription (recurring payment) created" in message or \
+				"Payment received via PayPal Express Checkout. Amount " in message:
+			audit_log = get_audit_log_by_id(items.Id, debug=debug)
+			audit_log_props = audit_log.Properties
+			if 'recurring_payment_id' in vars(audit_log_props).keys():
+				recurring_payment_id = audit_log_props.recurring_payment_id
+				# print(audit_log_props.recurring_payment_id)
+			if 'PROFILEID' in vars(audit_log_props).keys():
+				recurring_payment_id = audit_log_props.PROFILEID
+
+			if recurring_payment_id:
+				created[recurring_payment_id] = audit_log.Contact.Id	
+			return {"created":created,"ended":ended}
 
 def update_membership_level_by_id(WAID, LevelID, ReInvoice=False, debug = False):
 	check_urls()
