@@ -17,7 +17,7 @@ ended = {}
 empty_results = 0
 
 consecutive_errors = 0
-keep_going = True
+run = True
 search_done = False
 
 current_status = None 
@@ -36,7 +36,7 @@ else:
 
 while(run):
     try:
-        subscription_ids_from_wa = generalfunctions.get_contact_and_subscription_ids_2(number=number, skip=skip, debug=False,csv_out=False)
+        subscription_ids_from_wa = generalfunctions.get_contact_and_subscription_ids_2(number=number, skip=skip, debug=False)
         consecutive_errors = 0
         # run = False
     except OSError as err:
