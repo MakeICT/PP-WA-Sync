@@ -357,7 +357,10 @@ def create_payment_for_contact_id(contact_id, amount, tenderId=None, paytype='Un
 		'Contact' : Contacts,
 		'Value' : amount, 
 		'PaymentType' : paytype,
-		'DocumentDate' : paydate.isoformat()
+		'Tender': {'Id': tenderId},
+		'DocumentDate' : paydate.isoformat(),
+		'Comment': comment,
+		# 'Invoices': [{'Id':23071}],
 	}
 	request_url = paymentsUrl 
 	api_request_object = params
