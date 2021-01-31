@@ -1,5 +1,7 @@
 import paypalrestsdk 
 import logging
+
+from paypalrestsdk import BillingAgreement, ResourceNotFound
 #logging.basicConfig(level=logging.INFO)
 
 #See the paypal api docs for how to do this with environment 
@@ -22,7 +24,7 @@ def get_billingAgreement_by_ID(pp_ID, debug = False):
 			print("Billing Agreement Not Found")
 		return None
 
-def get_transactions_by_BillingAgreement_ID(pp_ID, start_date="2010-01-01", end_date="2030-12-31" debug = False):
+def get_transactions_by_BillingAgreement_ID(pp_ID, start_date="2010-01-01", end_date="2030-12-31", debug = False):
 	try:
 		billing_agreement = paypalrestsdk.BillingAgreement.find(pp_ID)
 		transactions = billing_agreement.search_transactions(start_date, end_date)
