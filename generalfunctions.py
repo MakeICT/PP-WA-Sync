@@ -22,7 +22,7 @@ def get_new_urls():
 	with open('wa-key', 'r') as keyFile:
 		wildApricotKey = keyFile.read()
 	api.authenticate_with_apikey(wildApricotKey) 
-	accounts = api.execute_request('/v2/Accounts')
+	accounts = api.execute_request('/v2.2/Accounts')
 	account = accounts[0]
 	for res in account.Resources: 
 		#print (res)
