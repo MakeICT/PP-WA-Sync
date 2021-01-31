@@ -62,7 +62,7 @@ def assign_payment_to_invoice(payment_id, invoice_id, amount, debug = False):
 	api_request_object = { 'InvoiceId': invoice_id, 'Amount': amount}
 	print(request_url)
 	print(api_request_object)
-	return api.execute_request(request_url, api_request_object=api_request_object, Printout=True, Test=True, method="POST")
+	return api.execute_request(request_url, api_request_object=api_request_object, Printout=True, Test=False, method="POST")
 
 def create_invoice(contact_id=0, value=0, created_by_id=0, DocumentNumber = '9999999', OrderType = 'Undefined', InternalMemo = 'TESTING', PublicMemo = 'TESTING PUBLIC MEMO', Notes = 'NOTE: TESTING IGNORE'):
 	# Verified, requires full admin token, not read only
@@ -179,7 +179,7 @@ def get_audit_log(number=10, debug=False, startdate=None, enddate=None, skip=0):
 	params = {'$top': '10', '$async': 'false'} #, 'contactId': str(WAID)}
 	if startdate is None and enddate is None:
 		today = date.today()
-		threedays = timedelta(days=20)
+		threedays = timedelta(days=3000)
 		shortcutoff = date.today() - threedays
 		params = {'StartDate': shortcutoff.isoformat(),  'EndDate': today.isoformat(), '$async': 'false', '$top': number, '$skip': skip}
 	else:
