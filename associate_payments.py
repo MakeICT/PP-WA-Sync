@@ -21,6 +21,27 @@ end_date = datetime.today().date()
 
 result = db.session.query(db.Link).filter_by(ended=False)
 active = result.count()
+def CheckInvoices(contact_id, value, transaction_date):
+    invoices = gf.get_invoices_by_contact_id(contact_id, unpaidOnly=True)
+    # invoices = gf.get_invoices_by_contact_id(contact_id, unpaidOnly=True)
+    invoice_to_pay = None
+    for invoice in invoices.Invoices:
+        # for item in invoice.__dict__:
+        #     print(item)
+        # print(invoice.__dict__)
+        if invoice.Value == float(value):
+            invoice_date = datetime.strptime(invoice.CreatedDate, '%Y-%m-%dT%H:%M:%S')
+            # print(transaction_date.date(), invoice_date.date())
+            if abs((transaction_date.date() - invoice_date.date()).days) <= 9:
+                # invoice = gf.get_invoice(invoice.Id)
+                # print("####################")
+                # print(invoice.OrderType)
+                if invoice.OrderType == 'MembershipApplication' or invoice.OrderType == 'MembershipRenewal':
+                    invoice_to_pay = invoice
+                    return invoice
+
+    print("Couldn't find invoice to pay!")
+    return None
 for row in result:
     print(row)
     agreement = get_billingAgreement_by_ID(row.recurring_id)

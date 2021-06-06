@@ -16,7 +16,7 @@ api = None
 
 
 def get_new_urls(): 
-	global contactsUrl, eventsUrl, eventRegUrl, paymentAllocationUrl, paymentsUrl, invoicesUrl, tendersURL, auditLogURL, contactFieldsURL
+	global contactsUrl, eventsUrl, eventRegUrl, paymentAllocationUrl, paymentsUrl, invoicesUrl, tendersURL, auditLogURL, contactFieldsURL, membershipLevelsURL
 	global api
 	api = WaApi.WaApiClient('a','b')
 	with open('wa-key', 'r') as keyFile:
@@ -25,7 +25,7 @@ def get_new_urls():
 	accounts = api.execute_request('/v2.2/Accounts')
 	account = accounts[0]
 	for res in account.Resources: 
-		#print (res)
+		# print (res)
 		if res.Name == 'Contacts':
 			contactsUrl = res.Url
 		if res.Name == 'Events':
@@ -44,6 +44,8 @@ def get_new_urls():
 			auditLogURL = res.Url
 		if res.Name == 'Contact fields':
 			contactFieldsURL = res.Url
+		if res.Name == 'Membership levels':
+			membershipLevelsURL = res.Url
 	
 	
 
@@ -64,24 +66,29 @@ def assign_payment_to_invoice(payment_id, invoice_id, amount, debug = False):
 	print(api_request_object)
 	return api.execute_request(request_url, api_request_object=api_request_object, Printout=True, Test=False, method="POST")
 
-def create_invoice(contact_id=0, value=0, created_by_id=0, DocumentNumber = '9999999', OrderType = 'Undefined', InternalMemo = 'TESTING', PublicMemo = 'TESTING PUBLIC MEMO', Notes = 'NOTE: TESTING IGNORE'):
+def create_invoice(contact_id=0, value=0, created_by_id=0, DocumentNumber = '9999999', 
+				   OrderType = 'Undefined', InternalMemo = 'TESTING', PublicMemo = 'TESTING PUBLIC MEMO', 
+				   Notes = 'NOTE: TESTING IGNORE', document_date=None):
 	# Verified, requires full admin token, not read only
 	check_urls()
-	if DocumentNumber == '9999999':
-		#TODO handle this better
-		print("No Document Number Specified, Exiting")
-		exit(1)
+	#TODO: WTF is this for, James?
+	# if DocumentNumber == '9999999':
+	# 	#TODO handle this better
+	# 	print("No Document Number Specified, Exiting")
+	# 	exit(1)
 	today = date.today()
+	if not document_date:
+		document_date = today.isoformat()
 	Contact = { 'Id' : contact_id }
 	OrderDetails = [{ 'Value' : value, 'OrderDetailType' : OrderType, 'Notes' : Notes }]
 	params = {
 		'Contact' : Contact,
-		'DocumentDate': today.isoformat(), 
+		'DocumentDate': document_date.isoformat(), 
 		'UpdatedDate': today.isoformat(), 
 		'CreatedBy' : created_by_id,
 		'UpdatedBy' : created_by_id,
 		'Value' : value,
-		'DocumentNumber' : DocumentNumber,
+		# 'DocumentNumber' : DocumentNumber,
 		'OrderType' : OrderType,
 		'OrderDetails' : OrderDetails,
 		'Memo' : InternalMemo,
@@ -105,6 +112,25 @@ def get_unsettled_payments():
 	print('Getting unsettled payments')
 	params = {'$top': '600', '$async': 'false',  'unsettledOnly': 'true'}
 	request_url = paymentsUrl  + '?' + urllib.parse.urlencode(params)
+	return api.execute_request(request_url, Printout=False)
+
+
+def get_payments_by_contact_id(contact_id, start_date=None, end_date=None):
+	check_urls()
+
+	params = {}
+
+	params['ContactId'] = contact_id
+	if start_date:
+		start_date_str = start_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+		params['StartDate'] = start_date_str
+	if end_date:
+		end_date_str = end_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+		params['EndDate'] = end_date_str
+	
+	request_url = paymentsUrl + '?' + urllib.parse.urlencode(params)
+	# print(request_url)
+
 	return api.execute_request(request_url, Printout=False)
 
 
@@ -152,16 +178,16 @@ def get_payment_allocation_by_contact_id(WAID, debug = False):
 	return api.execute_request(request_url, Printout=False)
 
 
-def get_payments_by_contact_id(WAID, unsettledOnly=False, debug = False):
-	check_urls()
-	if debug:
-		print('Getting payments for ID: ' + str(WAID))
-	if unsettledOnly == True:
-		params = {'$top': '10', '$async': 'false', 'contactId': str(WAID), 'unsettledOnly': 'true'}
-	else:
-		params = {'$top': '10', '$async': 'false', 'contactId': str(WAID)}
-	request_url = paymentsUrl + '?' + urllib.parse.urlencode(params)
-	return api.execute_request(request_url, Printout=False)
+# def get_payments_by_contact_id(WAID, unsettledOnly=False, debug = False):
+# 	check_urls()
+# 	if debug:
+# 		print('Getting payments for ID: ' + str(WAID))
+# 	if unsettledOnly == True:
+# 		params = {'$top': '10', '$async': 'false', 'contactId': str(WAID), 'unsettledOnly': 'true'}
+# 	else:
+# 		params = {'$top': '10', '$async': 'false', 'contactId': str(WAID)}
+# 	request_url = paymentsUrl + '?' + urllib.parse.urlencode(params)
+# 	return api.execute_request(request_url, Printout=False)
 
 def get_audit_log_by_id(WAID,debug=False):
 	check_urls()
@@ -287,18 +313,18 @@ def get_contact_and_subscription_ids_2(number = 10, debug=False, skip=0):
 		print(items.Timestamp)
 		if debug:
 			print(message)
-		if "PayPal Express Checkout subscription (recurring payment) ended" in message:
-			audit_log = get_audit_log_by_id(items.Id, debug=debug)
-			#TODO: audit logs before 2017 do not have any properties, but profile created/ended
-			#      messages have the profile ID in the message, so that could be used instead
-			audit_log_props = audit_log.Properties
-			if 'recurring_payment_id' in vars(audit_log_props).keys():
-				recurring_payment_id = audit_log_props.recurring_payment_id
-			if 'PROFILEID' in vars(audit_log_props).keys():
-				recurring_payment_id = audit_log_props.PROFILEID
+		# if "PayPal Express Checkout subscription (recurring payment) ended" in message:
+		# 	audit_log = get_audit_log_by_id(items.Id, debug=debug)
+		# 	#TODO: audit logs before 2017 do not have any properties, but profile created/ended
+		# 	#      messages have the profile ID in the message, so that could be used instead
+		# 	audit_log_props = audit_log.Properties
+		# 	if 'recurring_payment_id' in vars(audit_log_props).keys():
+		# 		recurring_payment_id = audit_log_props.recurring_payment_id
+		# 	if 'PROFILEID' in vars(audit_log_props).keys():
+		# 		recurring_payment_id = audit_log_props.PROFILEID
 
-			if recurring_payment_id:
-				ended[recurring_payment_id] = audit_log.Contact.Id
+		# 	if recurring_payment_id:
+		# 		ended[recurring_payment_id] = audit_log.Contact.Id
 
 		if "PayPal Express Checkout subscription (recurring payment) created" in message or \
 				"Payment received via PayPal Express Checkout. Amount " in message:
@@ -314,6 +340,11 @@ def get_contact_and_subscription_ids_2(number = 10, debug=False, skip=0):
 				created[recurring_payment_id] = audit_log.Contact.Id	
 			return {"created":created,"ended":ended}
 
+def get_membership_level(level_id):
+	request_url = membershipLevelsURL + "/" + str(level_id)
+
+	return api.execute_request(request_url)
+
 def update_membership_level_by_id(WAID, LevelID, ReInvoice=False, debug = False):
 	check_urls()
 	params = {'contactId': str(WAID)}
@@ -323,8 +354,27 @@ def update_membership_level_by_id(WAID, LevelID, ReInvoice=False, debug = False)
 		updates = { 'Id' : WAID, 'MembershipLevel' : level , 'MembershipEnabled': 'true' } 
 	else:
 		updates = { 'Id' : WAID, 'MembershipLevel' : level , 'MembershipEnabled': 'true', 'RecreateInvoice': 'true'}
+		updates = { 'Id' : WAID, 'RecreateInvoice': 'true'}
 	request_url = contactsUrl  + str(WAID) #+   '?' + urllib.parse.urlencode(params)
 	api_request_object = updates
+	return api.execute_request(request_url, api_request_object=api_request_object, Printout=False, Test=False, method="PUT")
+
+def set_member_renewal_date(wa_id, renewal_date, status=None, debug = False):
+	# check_urls()
+	request_url = contactsUrl  + str(wa_id)
+
+	api_request_object = {
+		'Id': wa_id,
+		'FieldValues' : [
+			{
+			"SystemCode": "RenewalDue",
+			"Value": DateTimeToWADate(renewal_date)
+			}
+		]
+	}
+
+	if status:
+		api_request_object['Status'] = status
 	return api.execute_request(request_url, api_request_object=api_request_object, Printout=False, Test=False, method="PUT")
 
 
@@ -343,6 +393,14 @@ def get_members_by_email_and_name(email, firstname, lastname, debug = False):
 	if debug:
 		print("Finding contact/member for email " + str(email) + ' and name F/L: ' + str(firstname) + ' ' + str(lastname))
 	params = {'$filter': 'substringof(\'Email\', \''+ email + '\') And \'LastName\' eq \'' + lastname  + '\'  And \'FirstName\' eq \'' + firstname +'\'', '$top': '20', '$async': 'false'}
+	request_url = contactsUrl + '?' + urllib.parse.urlencode(params)
+	return api.execute_request(request_url, Printout=False).Contacts
+
+def get_contact_by_email(email, debug = False):
+	check_urls()
+	if debug:
+		print("Finding contact/member for email " + str(email) + ' and name F/L: ' + str(firstname) + ' ' + str(lastname))
+	params = {'$filter': 'substringof(\'Email\', \''+ email + '\')', '$top': '20', '$async': 'false'}
 	request_url = contactsUrl + '?' + urllib.parse.urlencode(params)
 	return api.execute_request(request_url, Printout=False).Contacts
 
@@ -369,3 +427,22 @@ def create_payment_for_contact_id(contact_id, amount, tenderId=None, paytype='Un
 		print(api_request_object)
 	return api.execute_request(request_url, api_request_object=api_request_object, Printout=False, Test=False, method="POST")
 		
+
+def WADateToDateTime(wa_date):
+	fixed_date = wa_date[0:22]+wa_date[23:]
+	try:
+		py_date = datetime.strptime(fixed_date, '%Y-%m-%dT%H:%M:%S%z')
+	except ValueError:
+		py_date = datetime.strptime(fixed_date, '%Y-%m-%dT%H:%M:%S')
+
+	return py_date
+
+def DateTimeToWADate(py_date):
+	try:
+		if not py_date.tzinfo==None:
+			utc = pytz.timezone("UTC")
+			py_date = py_date.astimezone(utc)
+	except AttributeError:
+		pass
+
+	return py_date.strftime('%Y-%m-%dT%H:%M:%S')
