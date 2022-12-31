@@ -104,5 +104,5 @@ for profile in ended:
     db.session.commit()
 
 # Quick and dirty way to restart script after WA token times out and fails to refresh
-import os, sys
-os.execv(__file__, sys.argv)
+# import os, sys
+# os.execv(__file__, sys.argv)

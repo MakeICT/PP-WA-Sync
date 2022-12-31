@@ -1,7 +1,7 @@
 import paypalrestsdk 
 import logging
 
-from paypalrestsdk import BillingAgreement, ResourceNotFound
+from paypalrestsdk import Payment, BillingAgreement, ResourceNotFound
 #logging.basicConfig(level=logging.INFO)
 
 #See the paypal api docs for how to do this with environment 
